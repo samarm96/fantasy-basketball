@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalDouble;
+import java.util.Map.Entry;
 
 import com.fantasy.Queries.PlayerGameLogs;
 import com.fantasy.QueryParams.SeasonType;
@@ -37,20 +38,21 @@ public class GetStats {
             String seasonYear) {
 
         String inputFile = ".\\src\\main\\java\\com\\fantasy\\resources\\" + inputFileName + ".txt";
+        
         List<PlayerStats> statsList = new ArrayList<>();
         List<String> names = new ArrayList<>();
 
         try {
             // Read values from the text file
-            var inputValues = readValuesFromFile(inputFile);
+            Map<String, String> inputValues = readValuesFromFile(inputFile);
 
             // Process the input values (replace with your own processing logic)
-            for (var player : inputValues.entrySet()) {
+            for ( Entry<String, String> player : inputValues.entrySet()) {
                 names.add(player.getKey());
                 statsList.add(retrieveStats(initialDate, finalDate, player.getValue(), seasonType, seasonYear));
             }
             // Write the processed values to a CSV file
-            writeValuesToCSV(inputFileName, statsList, names);
+            writeValuesToCSV(inputFileName, statsList, names, initialDate, finalDate);
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -103,7 +105,7 @@ public class GetStats {
     }
 
     // Function to write values to a CSV file
-    private static void writeValuesToCSV(String fileName, List<PlayerStats> values, List<String> names)
+    private static void writeValuesToCSV(String fileName, List<PlayerStats> values, List<String> names, String initialDate, String finalDate)
             throws IOException {
 
         String path = ".\\src\\main\\java\\com\\fantasy\\resources\\output\\" + fileName + ".csv";
@@ -118,13 +120,20 @@ public class GetStats {
 
             // create a List which contains String array
             List<String[]> data = new ArrayList<String[]>();
-            data.add(new String[] { "Name", "ID", "PPG", "APG", "OREB", "TS%" });
+                        
+            data.add(new String[] { "Time Range", initialDate, finalDate});
+
+            data.add(new String[] { "Name", "ID", "PPG", "APG", "OREB", "TS%", "Effective PTS", "APG PTS", "TOTAL OFFENSIVE PTS" });
 
             for (int i = 0; i < values.size(); i++) {
                 var playerStats = values.get(i);
                 data.add(new String[] { names.get(i), playerStats.getId(), playerStats.getPpg().toString(),
                         playerStats.getApg().toString(), playerStats.getOrbpg().toString(),
-                        playerStats.getTspg().toString() });
+                        playerStats.getTspg().toString(), playerStats.getEffPts().toString(), 
+                        playerStats.getAstPts().toString(), playerStats.getOrebPts().toString(), 
+                        playerStats.getTotalPts().toString() 
+                    
+                    });
 
             }
 
@@ -156,7 +165,6 @@ public class GetStats {
         return values;
     }
 
-    @AllArgsConstructor
     @Data
     private class PlayerStats {
         String id;
@@ -164,6 +172,24 @@ public class GetStats {
         Double tspg;
         Double apg;
         Double orbpg;
+        Double effPts;
+        Double astPts;
+        Double orebPts;
+        Double totalPts;
+
+        public PlayerStats(String id, Double ppg, Double tspg, Double apg, Double orbpg) {
+            this.id = id;
+            this.ppg = ppg;
+            this.tspg = tspg;
+            this.apg = apg;
+            this.orbpg = orbpg;
+
+            this.effPts =((tspg/58)*ppg)/2;
+            this.astPts = (apg*2.5)/2;
+            this.orebPts = (orbpg*1.3)/2;
+            this.totalPts = effPts + astPts + orebPts;
+
+        }
 
     }
 
