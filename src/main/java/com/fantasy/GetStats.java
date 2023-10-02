@@ -1,92 +1,184 @@
 package com.fantasy;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.OptionalDouble;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.fantasy.Queries.PlayerGameLogs;
+import com.fantasy.QueryParams.SeasonType;
+import com.fantasy.QueryParams.SeasonYear;
+import com.opencsv.CSVWriter;
 
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
 public class GetStats {
 
     public static void main(String[] args) {
+        GetStats g = new GetStats();
 
-        // Define the NBA Stats API endpoint for player statistics
-        String leagueLeaderUrl = "https://stats.nba.com/stats/leagueLeaders?LeagueID=00&PerMode=Totals&Scope=S&Season=2022-23&SeasonType=Regular+Season&StatCategory=FG3M";
+        String initialDate = "02/14/2022";
+        String finalDate = "04/14/2023";
+        String playerId = "1630578";
+        SeasonType seasonType = SeasonType.Regular_Season;
+        String seasonYear = SeasonYear.Y22_23;
 
-        OkHttpClient client = new OkHttpClient();
+        g.processPlayerList("TestTeam", initialDate, finalDate, seasonType, seasonYear);
+    }
 
-        Request request = new Request.Builder()
-                .url(leagueLeaderUrl)
-                .addHeader("Host", "stats.nba.com")
-                .addHeader("User-Agent",
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0")
-                .addHeader("Accept", "application/json, text/plain, */*'")
-                .addHeader("Accept-Language", "en-US,en;q=0.5")
-                .addHeader("x-nba-stats-origin", "stats")
-                .addHeader("x-nba-stats-token", "true")
-                .addHeader("Connection", "keep-alive")
-                .addHeader("Referer", "https://stats.nba.com/")
-                .addHeader("Pragma", "no-cache")
-                .addHeader("Cache-Control", "no-cache")
-                .addHeader("Sec-Fetch-Site", "same-origin")
-                .addHeader("Sec-Fetch-Mode", "cors")
-                .build();
+    public void processPlayerList(String inputFileName, String initialDate, String finalDate, SeasonType seasonType,
+            String seasonYear) {
+
+        String inputFile = ".\\src\\main\\java\\com\\fantasy\\resources\\" + inputFileName + ".txt";
+        List<PlayerStats> statsList = new ArrayList<>();
+        List<String> names = new ArrayList<>();
 
         try {
-            Response response = client.newCall(request).execute();
-            ResponseBody responseBody = response.body();
+            // Read values from the text file
+            var inputValues = readValuesFromFile(inputFile);
 
-            if (responseBody != null) {
-                String jsonData = responseBody.string();
-
-                // Parse the JSON response
-                JSONObject jsonObject = new JSONObject(jsonData);
-
-                // Extract player statistics
-                JSONObject results = (JSONObject) jsonObject.get("resultSet");
-                JSONArray headers = (JSONArray) results.get("headers");
-                JSONArray data = (JSONArray) results.get("rowSet");
-
-                System.out.println(results.toMap().keySet());
-                // JSONArray data =
-                // jsonObject.getJSONArray("resultSet").getJSONObject(0).getJSONArray("rowSet");
-                Map<Object, Object> map = new HashMap<Object, Object>();
-                System.out.println(headers);
-                                // Display player statistics
-
-                    for (int i = 0; i < data.length(); i++) {
-                        JSONArray playerData = (JSONArray) data.get(i);
-                        String playerName = (String) playerData.get(2);
-                        JSONArray headersVal = headers;
-                        Map<Object, Object> innerMap = new HashMap<>();
-                        for(int j = 0; j < headersVal.length(); j++){
-                            if(j==2) {
-                                continue;
-                            }
-                            innerMap.put(headersVal.get(j),playerData.get(j));
-                        }
-                        map.put(playerName, innerMap);
-
-                    }
-                
-                // Print the Map
-                for( Map.Entry<Object,Object> entry : map.entrySet()) {
-                  System.out.println(entry.getKey() + " : " + entry.getValue() );
-
-                }
-
-                System.out.println(map.get("Fred VanVleet"));
-
+            // Process the input values (replace with your own processing logic)
+            for (var player : inputValues.entrySet()) {
+                names.add(player.getKey());
+                statsList.add(retrieveStats(initialDate, finalDate, player.getValue(), seasonType, seasonYear));
             }
+            // Write the processed values to a CSV file
+            writeValuesToCSV(inputFileName, statsList, names);
 
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    private PlayerStats retrieveStats(String initialDate, String finalDate, String playerId, SeasonType seasonType,
+            String seasonYear) {
+
+        PlayerGameLogs gameLogRetrieval = new PlayerGameLogs();
+
+        Map<Object, Object> results = gameLogRetrieval.get(initialDate, finalDate, playerId, seasonType, seasonYear);
+
+        List<Double> points = new ArrayList<>();
+        List<Double> assists = new ArrayList<>();
+        List<Double> oreb = new ArrayList<>();
+        List<Double> tss = new ArrayList<>();
+
+        for (Map.Entry<Object, Object> entry : results.entrySet()) {
+            Map<Object, Object> values = (Map<Object, Object>) entry.getValue();
+            Double PTS = ((Integer) values.get("PTS")).doubleValue();
+            Double AST = ((Integer) values.get("AST")).doubleValue();
+            Double OREB = ((Integer) values.get("OREB")).doubleValue();
+            Double FGA = ((Integer) values.get("FGA")).doubleValue();
+            Double FTA = ((Integer) values.get("FTA")).doubleValue();
+
+            double ts = PTS / (2 * (FGA + 0.44 * FTA));
+            oreb.add((OREB));
+            tss.add(ts);
+            assists.add(AST);
+            points.add(PTS);
+        }
+
+        return new PlayerStats(
+                playerId,
+                average(points),
+                average(tss),
+                average(assists),
+                average(oreb));
+
+    }
+
+    private double average(List<Double> list) {
+        OptionalDouble average = list
+                .stream()
+                .mapToDouble(a -> a)
+                .average();
+
+        return average.getAsDouble();
+    }
+
+    // Function to write values to a CSV file
+    private static void writeValuesToCSV(String fileName, List<PlayerStats> values, List<String> names)
+            throws IOException {
+
+        String path = ".\\src\\main\\java\\com\\fantasy\\resources\\output\\" + fileName + ".csv";
+        File file = new File(path);
+
+        try {
+            // create FileWriter object with file as parameter
+            FileWriter outputfile = new FileWriter(file);
+
+            // create CSVWriter object filewriter object as parameter
+            CSVWriter writer = new CSVWriter(outputfile);
+
+            // create a List which contains String array
+            List<String[]> data = new ArrayList<String[]>();
+            data.add(new String[] { "Name", "ID", "PPG", "APG", "OREB", "TS%" });
+
+            for (int i = 0; i < values.size(); i++) {
+                var playerStats = values.get(i);
+                data.add(new String[] { names.get(i), playerStats.getId(), playerStats.getPpg().toString(),
+                        playerStats.getApg().toString(), playerStats.getOrbpg().toString(),
+                        playerStats.getTspg().toString() });
+
+            }
+
+            writer.writeAll(data);
+
+            // closing writer connection
+            writer.close();
+
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+    }
+
+    // Function to read values from a text file and return them as a list
+    private static Map<String, String> readValuesFromFile(String filePath) throws IOException {
+        Map<String, String> values = new HashMap<>();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] splitLine = line.split(",");
+                String name = splitLine[0];
+                String id = splitLine[1];
+                values.put(name, id);
+            }
+        }
+        return values;
+    }
+
+    @AllArgsConstructor
+    @Data
+    private class PlayerStats {
+        String id;
+        Double ppg;
+        Double tspg;
+        Double apg;
+        Double orbpg;
+
+    }
+
 }
+/*
+ * PPG ---
+ * TS% ---
+ * APG ---
+ * 3PAr ---
+ * FTr --
+ * ORB% ---
+ * DRB% ---
+ * STL%
+ * TOV% --
+ * USG%
+ */
+// Turnover Ratio Formula=(Turnovers)*100)/ [(Field Goal Attempts)+(Free Throw
+// Attempts*0.44)+(Assists)+(Turnovers)]

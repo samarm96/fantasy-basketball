@@ -1,4 +1,4 @@
-package com.fantasy;
+package com.fantasy.Queries;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -6,30 +6,30 @@ import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.fantasy.QueryParams.SeasonType;
+import com.fantasy.Utilities.HttpUtilities;
+
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
-public class GetPlayerYearlyStats {
-
+public class GetEstimatedStats {
+    
     public static void main(String[] args) {
-        GetPlayerYearlyStats g = new GetPlayerYearlyStats();
-        g.get(PerMode.PerGame, 2544);
+        GetEstimatedStats ges = new GetEstimatedStats();
+        ges.get("2022-23", SeasonType.Regular_Season);
     }
-
-    public void get(PerMode perMode, int playerId) {
+    public void get(String seasonYr, SeasonType seasonType) {
 
         // Define the NBA Stats API endpoint for player statistics
-        //String playerStatsUrl = "https://stats.nba.com/stats/playercareerstats?LeagueID=00&PerMode=PerGame&PlayerID=2544";
-        String playerStatsUrl = String.format("https://stats.nba.com/stats/playercareerstats?LeagueID=00&PerMode=%s&PlayerID=%s",
-        perMode.toString(),
-        String.valueOf(playerId));
+        String url = String.format("https://stats.nba.com/stats/playerestimatedmetrics?LeagueID=00&Season=%s&SeasonType=%s",
+        seasonYr,
+        seasonType.toString().replaceAll("_", "+"));
 
         OkHttpClient client = new OkHttpClient();
 
-        Request request = HttpUtilities.createRequest(playerStatsUrl);
-
+        Request request = HttpUtilities.createRequest(url);
 
         try {
             Response response = client.newCall(request).execute();
@@ -41,12 +41,20 @@ public class GetPlayerYearlyStats {
                 // Parse the JSON response
                 JSONObject jsonObject = new JSONObject(jsonData);
 
+                System.out.println(jsonObject.keySet());
+
                 // Extract player statistics
-                JSONObject results = (JSONObject) ((JSONArray) jsonObject.get("resultSets")).get(0);
+                JSONObject results = (JSONObject) jsonObject.get("resultSet");
+                                
+                System.out.println(results.keySet());
                 JSONArray headers = (JSONArray) results.get("headers");
                 JSONArray data = (JSONArray) results.get("rowSet");
 
+                System.out.println(headers);
+                // JSONArray data =
+                // jsonObject.getJSONArray("resultSet").getJSONObject(0).getJSONArray("rowSet");
                 Map<Object, Object> map = new HashMap<Object, Object>();
+                                // Display player statistics
 
                     for (int i = 0; i < data.length(); i++) {
                         JSONArray playerData = (JSONArray) data.get(i);
@@ -65,9 +73,11 @@ public class GetPlayerYearlyStats {
                 
                 // Print the Map
                 for( Map.Entry<Object,Object> entry : map.entrySet()) {
-                System.out.println(entry.getKey() + " : " + entry.getValue() );
+                  System.out.println(entry.getKey() + " : " + entry.getValue() );
 
                 }
+
+                System.out.println(map.get("Fred VanVleet"));
 
 
             }
@@ -76,5 +86,4 @@ public class GetPlayerYearlyStats {
             e.printStackTrace();
         }
     }
-
 }

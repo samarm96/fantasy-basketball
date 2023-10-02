@@ -1,4 +1,4 @@
-package com.fantasy;
+package com.fantasy.Utilities;
 
 import okhttp3.Request;
 

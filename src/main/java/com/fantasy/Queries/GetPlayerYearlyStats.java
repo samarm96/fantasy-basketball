@@ -1,4 +1,4 @@
-package com.fantasy;
+package com.fantasy.Queries;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -6,29 +6,33 @@ import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.fantasy.QueryParams.PerMode;
+import com.fantasy.Utilities.HttpUtilities;
+
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
-public class GetEstimatedStats {
-    
+public class GetPlayerYearlyStats {
+
     public static void main(String[] args) {
-        GetEstimatedStats ges = new GetEstimatedStats();
-        ges.get("2022-23", SeasonType.Regular_Season);
+        GetPlayerYearlyStats g = new GetPlayerYearlyStats();
+        g.get(PerMode.PerGame, 2544);
     }
-    public void get(String seasonYr, SeasonType seasonType) {
+
+    public void get(PerMode perMode, int playerId) {
 
         // Define the NBA Stats API endpoint for player statistics
-        String baseUrl = String.format("https://stats.nba.com/stats/playerestimatedmetrics?LeagueID=00&Season=%s&SeasonType=%s",
-        seasonYr,
-        seasonType.toString().replaceAll("_", "+"));
-
-        //String estimatedStatsUrl = "https://stats.nba.com/stats/playerestimatedmetrics?LeagueID=00&Season=2022-23&SeasonType=Regular+Season";
+        //String playerStatsUrl = "https://stats.nba.com/stats/playercareerstats?LeagueID=00&PerMode=PerGame&PlayerID=2544";
+        String url = String.format("https://stats.nba.com/stats/playercareerstats?LeagueID=00&PerMode=%s&PlayerID=%s",
+        perMode.toString(),
+        String.valueOf(playerId));
 
         OkHttpClient client = new OkHttpClient();
 
-        Request request = HttpUtilities.createRequest(baseUrl);
+        Request request = HttpUtilities.createRequest(url);
+
 
         try {
             Response response = client.newCall(request).execute();
@@ -40,24 +44,16 @@ public class GetEstimatedStats {
                 // Parse the JSON response
                 JSONObject jsonObject = new JSONObject(jsonData);
 
-                System.out.println(jsonObject.keySet());
-
                 // Extract player statistics
-                JSONObject results = (JSONObject) jsonObject.get("resultSet");
-                                
-                System.out.println(results.keySet());
+                JSONObject results = (JSONObject) ((JSONArray) jsonObject.get("resultSets")).get(0);
                 JSONArray headers = (JSONArray) results.get("headers");
                 JSONArray data = (JSONArray) results.get("rowSet");
 
-                System.out.println(headers);
-                // JSONArray data =
-                // jsonObject.getJSONArray("resultSet").getJSONObject(0).getJSONArray("rowSet");
                 Map<Object, Object> map = new HashMap<Object, Object>();
-                                // Display player statistics
 
                     for (int i = 0; i < data.length(); i++) {
                         JSONArray playerData = (JSONArray) data.get(i);
-                        String playerName = (String) playerData.get(1);
+                        String date = (String) playerData.get(1);
                         JSONArray headersVal = headers;
                         Map<Object, Object> innerMap = new HashMap<>();
                         for(int j = 0; j < headersVal.length(); j++){
@@ -66,17 +62,15 @@ public class GetEstimatedStats {
                             }
                             innerMap.put(headersVal.get(j),playerData.get(j));
                         }
-                        map.put(playerName, innerMap);
+                        map.put(date, innerMap);
 
                     }
                 
                 // Print the Map
                 for( Map.Entry<Object,Object> entry : map.entrySet()) {
-                  System.out.println(entry.getKey() + " : " + entry.getValue() );
+                System.out.println(entry.getKey() + " : " + entry.getValue() );
 
                 }
-
-                System.out.println(map.get("Fred VanVleet"));
 
 
             }
@@ -85,4 +79,5 @@ public class GetEstimatedStats {
             e.printStackTrace();
         }
     }
+
 }
