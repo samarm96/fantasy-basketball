@@ -7,7 +7,7 @@
   <groupId>com.fantasy</groupId>
   <artifactId>fantasy-basketball</artifactId>
   <version>1.0</version>
-
+ 
   <name>fantasy-basketball</name>
   <!-- FIXME change it to the project's website -->
   <url>http://www.example.com</url>
@@ -37,6 +37,13 @@
         <groupId>org.json</groupId>
         <artifactId>json</artifactId>
         <version>20210307</version> <!-- Use the latest version available -->
+    </dependency>
+
+    <!-- JCalendar library -->
+    <dependency>
+        <groupId>com.toedter</groupId>
+        <artifactId>jcalendar</artifactId>
+        <version>1.4</version>
     </dependency>
 
     <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->

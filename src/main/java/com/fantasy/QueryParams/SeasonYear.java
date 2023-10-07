@@ -7,7 +7,9 @@ public class SeasonYear {
     public static final String Y20_21 = "2020-21";
     public static final String Y19_20 = "2019-20";
     
-
+    public static String[] returnAsArray() {
+        return new String[]{Y19_20, Y20_21, Y21_22, Y22_23};
+    }
     
 
 }

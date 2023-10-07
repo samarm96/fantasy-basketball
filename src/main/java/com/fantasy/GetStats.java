@@ -14,30 +14,18 @@ import java.util.Map.Entry;
 
 import com.fantasy.Queries.PlayerGameLogs;
 import com.fantasy.QueryParams.SeasonType;
-import com.fantasy.QueryParams.SeasonYear;
 import com.opencsv.CSVWriter;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 public class GetStats {
 
-    public static void main(String[] args) {
-        GetStats g = new GetStats();
-
-        String initialDate = "02/14/2022";
-        String finalDate = "04/14/2023";
-        String playerId = "1630578";
-        SeasonType seasonType = SeasonType.Regular_Season;
-        String seasonYear = SeasonYear.Y22_23;
-
-        g.processPlayerList("TestTeam", initialDate, finalDate, seasonType, seasonYear);
-    }
+    private static String teamPath = "./src/main/java/com/fantasy/resources/";
 
     public void processPlayerList(String inputFileName, String initialDate, String finalDate, SeasonType seasonType,
             String seasonYear) {
 
-        String inputFile = ".\\src\\main\\java\\com\\fantasy\\resources\\" + inputFileName + ".txt";
+        String inputFile = teamPath + inputFileName;
         
         List<PlayerStats> statsList = new ArrayList<>();
         List<String> names = new ArrayList<>();
@@ -72,7 +60,8 @@ public class GetStats {
         List<Double> tss = new ArrayList<>();
 
         for (Map.Entry<Object, Object> entry : results.entrySet()) {
-            Map<Object, Object> values = (Map<Object, Object>) entry.getValue();
+            
+            Map<Object, Object> values = (HashMap<Object, Object>) entry.getValue();
             Double PTS = ((Integer) values.get("PTS")).doubleValue();
             Double AST = ((Integer) values.get("AST")).doubleValue();
             Double OREB = ((Integer) values.get("OREB")).doubleValue();
@@ -108,7 +97,7 @@ public class GetStats {
     private static void writeValuesToCSV(String fileName, List<PlayerStats> values, List<String> names, String initialDate, String finalDate)
             throws IOException {
 
-        String path = ".\\src\\main\\java\\com\\fantasy\\resources\\output\\" + fileName + ".csv";
+        String path = teamPath + fileName.split("\\.")[0] + ".csv";
         File file = new File(path);
 
         try {
@@ -143,7 +132,6 @@ public class GetStats {
             writer.close();
 
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
 
@@ -190,21 +178,5 @@ public class GetStats {
             this.totalPts = effPts + astPts + orebPts;
 
         }
-
     }
-
 }
-/*
- * PPG ---
- * TS% ---
- * APG ---
- * 3PAr ---
- * FTr --
- * ORB% ---
- * DRB% ---
- * STL%
- * TOV% --
- * USG%
- */
-// Turnover Ratio Formula=(Turnovers)*100)/ [(Field Goal Attempts)+(Free Throw
-// Attempts*0.44)+(Assists)+(Turnovers)]

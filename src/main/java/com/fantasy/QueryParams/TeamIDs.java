@@ -25,7 +25,6 @@ public class TeamIDs {
     public static final String ORL = "1610612753";
     public static final String WAS = "1610612764";
 
-
     // WESTERN CONFERENCE
 
     // NORTHWEST
